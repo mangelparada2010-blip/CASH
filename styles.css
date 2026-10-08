@@ -9,7 +9,7 @@ label{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
 input{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 input:focus-visible,button:focus-visible{outline:2px solid var(--a);outline-offset:2px}
 #monto{font-size:28px;font-weight:700}
-.ring{align-self:center;width:216px;height:216px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .3s}
+.ring{align-self:center;width:216px;height:216px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .ring div{width:156px;height:156px;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .ring small{color:var(--mute);font-size:13px}.ring b{font-size:26px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -20,19 +20,25 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--a);outline-offs
 .box small{display:block;font-size:11px;color:var(--mute)}
 .bar{display:flex;align-items:center;gap:8px;margin-top:4px}
 .bar span{flex:1;height:4px;background:var(--line);border-radius:2px}
-.bar span i{display:block;height:4px;border-radius:2px;transition:width .3s}
+.bar span i{display:block;height:4px;border-radius:2px}
 h2{font-size:15px;margin:0 0 2px}.sub{margin:0 0 12px;font-size:13px;color:var(--mute)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .four{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .state{font-size:12px;margin-top:10px;color:var(--mute)}.state.bad{color:var(--bad)}
 button{height:54px;border:0;border-radius:27px;background:var(--a);color:var(--bg);font:700 16px "DM Sans",sans-serif;cursor:pointer}
 @media (max-width:380px){.four{grid-template-columns:1fr 1fr}}
+
+/* Porcentajes con el color de cada categoría */
 .four label .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--col)}
 .four input{border-color:var(--col);color:var(--col);font-weight:700}
 .four input:focus-visible{outline-color:var(--col)}
+
+/* Tooltip */
 #tip{position:fixed;z-index:10;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--ink)}
 #tip b{display:block;margin-bottom:2px}
 #tip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+
+/* Entrada escalonada */
 @keyframes subir{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 main>*{animation:subir .5s ease backwards}
 main>*:nth-child(2){animation-delay:.06s}
@@ -42,16 +48,21 @@ main>*:nth-child(5){animation-delay:.24s}
 main>*:nth-child(6){animation-delay:.30s}
 main>*:nth-child(7){animation-delay:.36s}
 
-.grid .box{transition:transform .2s ease}
+/* Hover en tarjetas y botón */
+.grid .box{transition:transform .2s ease;cursor:pointer}
 .grid .box:hover{transform:translateY(-3px)}
-.ring{transition:transform .25s ease}
-.ring:hover{transform:scale(1.03)}
-.bar span i{transition:none}
 button{transition:transform .15s ease,filter .15s ease}
 button:hover{filter:brightness(1.08)}
 button:active{transform:scale(.97)}
 
+/* Dona SVG: un tramo por cada color */
+.ring{position:relative}
+.ring svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.ring>div{position:relative;z-index:1;pointer-events:none}
+.ring circle{fill:none;stroke-width:30;cursor:pointer;transition:stroke-width .25s ease,opacity .25s ease}
+.ring circle.on{stroke-width:38}
+.ring.hov circle:not(.on){opacity:.3}
+
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
-  .ring{cursor:pointer}
 }

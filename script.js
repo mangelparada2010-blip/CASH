@@ -2,31 +2,48 @@ const cats=[{k:"Necesidades",p:45,c:"--n"},{k:"Ahorro",p:25,c:"--a"},{k:"Crecimi
 const $=id=>document.getElementById(id);
 const num=s=>parseFloat(String(s).replace(/\./g,"").replace(",","."))||0;
 const fmt=n=>"$ "+Math.round(n).toLocaleString("es-CO");
-const col=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-const rgba=(hex,a)=>{const h=hex.replace("#","");return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`};
 const reduce=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 $("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}"><i class="dot"></i>${c.k} %</label><input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
 
 $("cards").innerHTML=cats.map((c,i)=>`<div class="box"><div class="t"><i style="background:var(${c.c})"></i>${c.k}</div><b id="v${i}"></b><small id="x${i}"></small><div class="bar"><span><i id="b${i}" style="background:var(${c.c})"></i></span><small id="pc${i}" style="color:var(${c.c})"></small></div></div>`).join("");
 
+// ---- Dona en SVG: un círculo por cada color ----
+const NS="http://www.w3.org/2000/svg", R=93, C=2*Math.PI*R;
+const svg=document.createElementNS(NS,"svg");
+svg.setAttribute("viewBox","0 0 216 216");
+const pista=document.createElementNS(NS,"circle");
+pista.setAttribute("cx",108);pista.setAttribute("cy",108);pista.setAttribute("r",R);
+pista.style.stroke="var(--line)";
+svg.appendChild(pista);
+const segs=cats.map((c,i)=>{
+  const s=document.createElementNS(NS,"circle");
+  s.setAttribute("cx",108);s.setAttribute("cy",108);s.setAttribute("r",R);
+  s.setAttribute("transform","rotate(-90 108 108)");
+  s.style.stroke=`var(${c.c})`;
+  svg.appendChild(s);
+  return s;
+});
+$("ring").prepend(svg);
 const etiqueta=$("ring").querySelector("small");
 
 let resumen="";
 let datos=[];
 let actual=cats.map(()=>0);
-let op=cats.map(()=>1);   // opacidad actual de cada tramo
-let hover=-1;             // tramo bajo el mouse (-1 = ninguno)
-let raf=0, rafH=0;
+let hover=-1;
+let raf=0;
 
 function pintar(vals){
   const tot=vals.reduce((a,b)=>a+b,0);
-  let acc=0,stops=[];
+  let acc=0;
   vals.forEach((v,i)=>{
-    const s=tot?acc/tot*100:0;acc+=v;const e=tot?acc/tot*100:0;
-    stops.push(`${rgba(col(cats[i].c),op[i])} ${s}% ${e}%`);
+    const len=tot?v/tot*C:0;
+    segs[i].style.strokeDasharray=`${len} ${C-len}`;
+    segs[i].style.strokeDashoffset=-acc;
+    acc+=len;
+    $("v"+i).textContent=fmt(v);
+    $("b"+i).style.width=(tot?v/tot*100:0)+"%";
   });
-  $("ring").style.background=tot?`conic-gradient(${stops.join(",")})`:col("--line");
   if(hover>=0){
     etiqueta.textContent=cats[hover].k;
     $("total").textContent=fmt(vals[hover]);
@@ -34,10 +51,6 @@ function pintar(vals){
     etiqueta.textContent="Distribuido";
     $("total").textContent=fmt(tot);
   }
-  vals.forEach((v,i)=>{
-    $("v"+i).textContent=fmt(v);
-    $("b"+i).style.width=(tot?v/tot*100:0)+"%";
-  });
 }
 
 function animar(destino){
@@ -53,22 +66,41 @@ function animar(destino){
   raf=requestAnimationFrame(paso);
 }
 
+// ---- Resaltar un color (desde la dona o desde su tarjeta) ----
 function setHover(i){
-  if(i===hover)return;
   hover=i;
-  cancelAnimationFrame(rafH);
-  const destino=cats.map((_,k)=>(i===-1||i===k)?1:0.3);
-  if(reduce()){op=destino;pintar(actual);return;}
-  const desde=[...op], t0=performance.now(), dur=220;
-  const paso=t=>{
-    const k=Math.min((t-t0)/dur,1);
-    op=destino.map((d,j)=>desde[j]+(d-desde[j])*k);
-    pintar(actual);
-    if(k<1)rafH=requestAnimationFrame(paso);
-  };
-  rafH=requestAnimationFrame(paso);
+  segs.forEach((s,k)=>s.classList.toggle("on",k===i));
+  $("ring").classList.toggle("hov",i>=0);
+  pintar(actual);
 }
 
+const tip=document.createElement("div");
+tip.id="tip";
+document.body.appendChild(tip);
+const ocultarTip=()=>{tip.style.opacity=0};
+
+function mostrar(e,i){
+  setHover(i);
+  const s=datos[i];
+  tip.innerHTML=`<b><i class="dot" style="background:var(${s.c})"></i>${s.k}</b>${fmt(s.v)} · ${s.pct.toFixed(1).replace(".",",")}%`;
+  tip.style.left=Math.min(e.clientX+14,innerWidth-tip.offsetWidth-8)+"px";
+  tip.style.top=Math.max(e.clientY-56,8)+"px";
+  tip.style.opacity=1;
+}
+
+segs.forEach((s,i)=>{
+  s.addEventListener("pointerenter",e=>mostrar(e,i));
+  s.addEventListener("pointermove",e=>mostrar(e,i));
+  s.addEventListener("pointerdown",e=>mostrar(e,i));
+  s.addEventListener("pointerleave",()=>{ocultarTip();setHover(-1)});
+});
+
+document.querySelectorAll("#cards .box").forEach((b,i)=>{
+  b.addEventListener("pointerenter",()=>setHover(i));
+  b.addEventListener("pointerleave",()=>setHover(-1));
+});
+
+// ---- Cálculo ----
 function calc(){
   const monto=num($("monto").value);
   const extra=Math.min(num($("horas").value)*num($("vh").value),monto);
@@ -93,37 +125,5 @@ function calc(){
 document.querySelectorAll("input").forEach(i=>i.addEventListener("input",calc));
 
 $("copiar").onclick=async()=>{const b=$("copiar");try{await navigator.clipboard.writeText(resumen);b.textContent="Resumen copiado"}catch(e){b.textContent="No se pudo copiar"}setTimeout(()=>b.textContent="Copiar resumen",1800)};
-
-const tip=document.createElement("div");
-tip.id="tip";
-document.body.appendChild(tip);
-const ocultar=()=>{tip.style.opacity=0;setHover(-1)};
-
-function mostrar(e){
-  const r=$("ring").getBoundingClientRect();
-  const dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
-  const d=Math.hypot(dx,dy), R=r.width/2, hueco=R*156/216;
-  if(d>R||d<hueco)return ocultar();
-  let a=Math.atan2(dx,-dy); if(a<0)a+=2*Math.PI;
-  const p=a/(2*Math.PI)*100;
-  let acc=0;
-  for(let i=0;i<datos.length;i++){
-    const s=datos[i];
-    acc+=s.pct;
-    if(p<=acc){
-      setHover(i);
-      tip.innerHTML=`<b><i class="dot" style="background:var(${s.c})"></i>${s.k}</b>${fmt(s.v)} · ${s.pct.toFixed(1).replace(".",",")}%`;
-      tip.style.left=Math.min(e.clientX+14,innerWidth-tip.offsetWidth-8)+"px";
-      tip.style.top=Math.max(e.clientY-56,8)+"px";
-      tip.style.opacity=1;
-      return;
-    }
-  }
-  ocultar();
-}
-
-$("ring").addEventListener("pointermove",mostrar);
-$("ring").addEventListener("pointerdown",mostrar);
-$("ring").addEventListener("pointerleave",ocultar);
 
 calc();
