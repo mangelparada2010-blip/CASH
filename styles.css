@@ -33,3 +33,24 @@ button{height:54px;border:0;border-radius:27px;background:var(--a);color:var(--b
 #tip{position:fixed;z-index:10;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--ink)}
 #tip b{display:block;margin-bottom:2px}
 #tip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+@keyframes subir{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+main>*{animation:subir .5s ease backwards}
+main>*:nth-child(2){animation-delay:.06s}
+main>*:nth-child(3){animation-delay:.12s}
+main>*:nth-child(4){animation-delay:.18s}
+main>*:nth-child(5){animation-delay:.24s}
+main>*:nth-child(6){animation-delay:.30s}
+main>*:nth-child(7){animation-delay:.36s}
+
+.grid .box{transition:transform .2s ease}
+.grid .box:hover{transform:translateY(-3px)}
+.ring{transition:transform .25s ease}
+.ring:hover{transform:scale(1.03)}
+.bar span i{transition:none}
+button{transition:transform .15s ease,filter .15s ease}
+button:hover{filter:brightness(1.08)}
+button:active{transform:scale(.97)}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
