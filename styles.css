@@ -26,11 +26,11 @@ h2{font-size:15px;margin:0 0 2px}.sub{margin:0 0 12px;font-size:13px;color:var(-
 .four{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .state{font-size:12px;margin-top:10px;color:var(--mute)}.state.bad{color:var(--bad)}
 button{height:54px;border:0;border-radius:27px;background:var(--a);color:var(--bg);font:700 16px "DM Sans",sans-serif;cursor:pointer}
-@media (max-width:380px){.four{grid-template-columns:1fr 1fr}}
+@media (max-width:420px){.four{grid-template-columns:1fr 1fr}}
 
 /* Porcentajes con el color de cada categoría */
-.four label .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--col)}
-.four input{border-color:var(--col);color:var(--col);font-weight:700}
+.four label{color:var(--col);font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+.four input{border-color:var(--col);color:var(--col);font-weight:700;text-align:center;padding:12px 6px}
 .four input:focus-visible{outline-color:var(--col)}
 
 /* Tooltip */

@@ -1,10 +1,13 @@
 const cats=[{k:"Necesidades",p:45,c:"--n"},{k:"Ahorro",p:25,c:"--a"},{k:"Crecimiento",p:15,c:"--c"},{k:"Libre",p:15,c:"--l"}];
 const $=id=>document.getElementById(id);
+// Montos en pesos: el punto es separador de miles y la coma es decimal
 const num=s=>parseFloat(String(s).replace(/\./g,"").replace(",","."))||0;
+// Porcentajes: aceptan punto o coma como decimal
+const pct=s=>parseFloat(String(s).replace(",","."))||0;
 const fmt=n=>"$ "+Math.round(n).toLocaleString("es-CO");
 const reduce=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-$("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}"><i class="dot"></i>${c.k} %</label><input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
+$("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}">${c.k}</label><input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
 
 $("cards").innerHTML=cats.map((c,i)=>`<div class="box"><div class="t"><i style="background:var(${c.c})"></i>${c.k}</div><b id="v${i}"></b><small id="x${i}"></small><div class="bar"><span><i id="b${i}" style="background:var(${c.c})"></i></span><small id="pc${i}" style="color:var(${c.c})"></small></div></div>`).join("");
 
@@ -105,7 +108,7 @@ function calc(){
   const monto=num($("monto").value);
   const extra=Math.min(num($("horas").value)*num($("vh").value),monto);
   const base=monto-extra;
-  const pcts=cats.map((c,i)=>num($("p"+i).value));
+  const pcts=cats.map((c,i)=>pct($("p"+i).value));
   const suma=pcts.reduce((a,b)=>a+b,0);
   const vals=pcts.map(p=>base*p/100); vals[1]+=extra;
   const tot=vals.reduce((a,b)=>a+b,0);
