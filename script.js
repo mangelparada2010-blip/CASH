@@ -128,123 +128,91 @@ document.querySelectorAll("input").forEach(i=>i.addEventListener("input",calc));
 
 $("copiar").onclick=async()=>{const b=$("copiar");try{await navigator.clipboard.writeText(resumen);b.textContent="Resumen copiado"}catch(e){b.textContent="No se pudo copiar"}setTimeout(()=>b.textContent="Copiar resumen",1800)};
 
-// ---- Extracto en PDF ----
-async function cargarLogo(){
-  try{
-    const img=new Image();
-    img.src="logo.png";
-    await img.decode();
-    const c=document.createElement("canvas");
-    c.width=img.naturalWidth;c.height=img.naturalHeight;
-    c.getContext("2d").drawImage(img,0,0);
-    return c.toDataURL("image/png");
-  }catch(e){return null}
-}
-
-async function descargarPDF(){
+// ---- Extracto en PDF (impresión del navegador) ----
+function descargarPDF(){
   if(!ultimo)calc();
-  if(!window.jspdf){alert("No se pudo cargar la librería de PDF. Verifica que el archivo jspdf.umd.min.js esté en el repositorio.");return;}
-  const btn=$("pdf"), txt=btn.textContent;
-  btn.textContent="Generando...";
-  try{
-    const {jsPDF}=window.jspdf;
-    const doc=new jsPDF({unit:"mm",format:"a4"});
-    const W=210, M=18, R=W-M;
-    const rgb=h=>{h=h.replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16))};
-    const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-    const {monto,extra,pcts,vals,tot}=ultimo;
+  const {monto,extra,pcts,vals,tot}=ultimo;
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const ahora=new Date();
+  const fecha=ahora.toLocaleDateString("es-CO",{day:"2-digit",month:"long",year:"numeric"});
+  const hora=ahora.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
+  const p2=n=>String(n).padStart(2,"0");
+  const nro=`${ahora.getFullYear()}${p2(ahora.getMonth()+1)}${p2(ahora.getDate())}-${p2(ahora.getHours())}${p2(ahora.getMinutes())}`;
 
-    const ahora=new Date();
-    const fecha=ahora.toLocaleDateString("es-CO",{day:"2-digit",month:"long",year:"numeric"});
-    const hora=ahora.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
-    const p2=n=>String(n).padStart(2,"0");
-    const nro=`${ahora.getFullYear()}${p2(ahora.getMonth()+1)}${p2(ahora.getDate())}-${p2(ahora.getHours())}${p2(ahora.getMinutes())}`;
+  const filas=cats.map((c,i)=>`
+    <tr>
+      <td><span class="pt" style="background:${css(c.c)}"></span>${c.k}</td>
+      <td class="r">${pcts[i]}%</td>
+      <td class="r">${(tot?vals[i]/tot*100:0).toFixed(1).replace(".",",")}%</td>
+      <td class="r"><b>${fmt(vals[i])}</b></td>
+    </tr>`).join("");
 
-    // Encabezado
-    doc.setFillColor(14,21,19);
-    doc.rect(0,0,W,40,"F");
-    const logo=await cargarLogo();
-    if(logo)doc.addImage(logo,"PNG",M,8,24,24);
-    doc.setTextColor(255,255,255);
-    doc.setFont("helvetica","bold");doc.setFontSize(16);
-    doc.text("LIGNUM PRECISION TECH",logo?M+30:M,19);
-    doc.setFont("helvetica","normal");doc.setFontSize(10);
-    doc.setTextColor(157,179,170);
-    doc.text("Extracto de distribución de ingresos",logo?M+30:M,26);
+  const extraHtml=extra>0?`
+    <div class="extra">
+      <b>Detalle de horas extra</b>
+      <p>${num($("horas").value)} h × ${fmt(num($("vh").value))} = ${fmt(extra)}</p>
+      <p>Este valor fue acreditado directamente a Ahorro.</p>
+    </div>`:"";
 
-    // Datos del extracto
-    let y=54;
-    doc.setTextColor(120,130,126);doc.setFontSize(8);
-    doc.text("EXTRACTO N°",M,y);
-    doc.text("FECHA DE EMISIÓN",90,y);
-    doc.text("INGRESO RECIBIDO",R,y,{align:"right"});
-    doc.setTextColor(20,28,25);doc.setFont("helvetica","bold");doc.setFontSize(11);
-    doc.text(nro,M,y+6);
-    doc.text(`${fecha}, ${hora}`,90,y+6);
-    doc.setFontSize(14);
-    doc.text(fmt(monto),R,y+7,{align:"right"});
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+  <title>Extracto-Lignum-${nro}</title>
+  <style>
+    @page{size:A4;margin:0}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#141c19;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .head{background:#0e1513;color:#fff;padding:28px 18mm;display:flex;align-items:center;gap:16px}
+    .head img{width:60px;height:60px;border-radius:50%;background:#fff}
+    .head h1{margin:0;font-size:20px;letter-spacing:.06em}
+    .head p{margin:4px 0 0;color:#9db3aa;font-size:13px}
+    .body{padding:24px 18mm}
+    .meta{display:flex;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid #d2dad6}
+    .meta small{display:block;color:#78827e;font-size:10px;letter-spacing:.06em;margin-bottom:4px}
+    .meta b{font-size:14px}
+    .meta .big{font-size:20px}
+    table{width:100%;border-collapse:collapse;margin-top:26px}
+    th{background:#eef2f0;text-align:left;font-size:11px;letter-spacing:.05em;color:#3c4642;padding:11px 12px}
+    td{padding:13px 12px;border-bottom:1px solid #e4eae7;font-size:14px}
+    .r{text-align:right}
+    .pt{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:10px}
+    .tot{display:flex;justify-content:space-between;background:#0e1513;color:#fff;padding:14px 12px;font-weight:bold;font-size:14px}
+    .extra{margin-top:28px;font-size:13px;color:#3c4642}
+    .extra b{color:#141c19;font-size:14px}
+    .extra p{margin:6px 0 0}
+    .foot{position:fixed;left:18mm;right:18mm;bottom:12mm;border-top:1px solid #d2dad6;padding-top:8px;text-align:center;font-size:10px;color:#82908c}
+  </style></head><body>
+    <div class="head">
+      <img src="${new URL("logo.png",location.href).href}" alt="">
+      <div><h1>LIGNUM PRECISION TECH</h1><p>Extracto de distribución de ingresos</p></div>
+    </div>
+    <div class="body">
+      <div class="meta">
+        <div><small>EXTRACTO N°</small><b>${nro}</b></div>
+        <div><small>FECHA DE EMISIÓN</small><b>${fecha}, ${hora}</b></div>
+        <div style="text-align:right"><small>INGRESO RECIBIDO</small><b class="big">${fmt(monto)}</b></div>
+      </div>
+      <table>
+        <tr><th>CONCEPTO</th><th class="r">REGLA</th><th class="r">% REAL</th><th class="r">VALOR</th></tr>
+        ${filas}
+      </table>
+      <div class="tot"><span>TOTAL DISTRIBUIDO</span><span>${fmt(tot)}</span></div>
+      ${extraHtml}
+    </div>
+    <div class="foot">Documento informativo generado automáticamente. No tiene validez contable ni tributaria.<br>© Lignum Precision Tech</div>
+  </body></html>`;
 
-    doc.setDrawColor(210,218,214);doc.setLineWidth(.3);
-    doc.line(M,y+13,R,y+13);
-
-    // Tabla
-    y=82;
-    doc.setFillColor(238,242,240);
-    doc.rect(M,y-6,R-M,10,"F");
-    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(60,70,66);
-    doc.text("CONCEPTO",M+4,y);
-    doc.text("REGLA",115,y,{align:"right"});
-    doc.text("% REAL",143,y,{align:"right"});
-    doc.text("VALOR",R-4,y,{align:"right"});
-
-    y+=11;
-    cats.forEach((c,i)=>{
-      const [r,g,b]=rgb(css(c.c));
-      doc.setFillColor(r,g,b);
-      doc.circle(M+5,y-1.2,1.8,"F");
-      doc.setFont("helvetica","normal");doc.setFontSize(11);doc.setTextColor(20,28,25);
-      doc.text(c.k,M+10,y);
-      doc.text(`${pcts[i]}%`,115,y,{align:"right"});
-      doc.text(`${(tot?vals[i]/tot*100:0).toFixed(1).replace(".",",")}%`,143,y,{align:"right"});
-      doc.setFont("helvetica","bold");
-      doc.text(fmt(vals[i]),R-4,y,{align:"right"});
-      doc.setDrawColor(228,234,231);
-      doc.line(M,y+4.5,R,y+4.5);
-      y+=11;
-    });
-
-    // Total
-    doc.setFillColor(14,21,19);
-    doc.rect(M,y-4,R-M,12,"F");
-    doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(11);
-    doc.text("TOTAL DISTRIBUIDO",M+4,y+3.5);
-    doc.text(fmt(tot),R-4,y+3.5,{align:"right"});
-    y+=24;
-
-    // Horas extra
-    if(extra>0){
-      const horas=num($("horas").value), vh=num($("vh").value);
-      doc.setTextColor(20,28,25);doc.setFont("helvetica","bold");doc.setFontSize(11);
-      doc.text("Detalle de horas extra",M,y);
-      doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(60,70,66);
-      doc.text(`${horas} h x ${fmt(vh)} = ${fmt(extra)}`,M,y+7);
-      doc.text("Este valor fue acreditado directamente a Ahorro.",M,y+13);
-      y+=26;
-    }
-
-    // Pie
-    doc.setDrawColor(210,218,214);
-    doc.line(M,277,R,277);
-    doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(130,140,136);
-    doc.text("Documento informativo generado automáticamente. No tiene validez contable ni tributaria.",W/2,283,{align:"center"});
-    doc.text("© Lignum Precision Tech",W/2,288,{align:"center"});
-
-    doc.save(`Extracto-Lignum-${nro}.pdf`);
-  }catch(err){
-    alert("Error al generar el PDF: "+err.message);
-  }finally{
-    btn.textContent=txt;
-  }
+  // Se imprime dentro de un iframe oculto: no abre pestañas ni las bloquea
+  const f=document.createElement("iframe");
+  f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+  document.body.appendChild(f);
+  const d=f.contentWindow.document;
+  d.open();d.write(html);d.close();
+  const imprimir=()=>{
+    f.contentWindow.focus();
+    f.contentWindow.print();
+    setTimeout(()=>f.remove(),2000);
+  };
+  const img=d.querySelector("img");
+  if(img&&!img.complete){img.onload=imprimir;img.onerror=imprimir}else imprimir();
 }
 $("pdf").onclick=descargarPDF;
 
