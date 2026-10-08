@@ -33,6 +33,11 @@ button{height:54px;border:0;border-radius:27px;background:var(--a);color:var(--b
 .four input{border-color:var(--col);color:var(--col);font-weight:700;text-align:center;padding:12px 6px}
 .four input:focus-visible{outline-color:var(--col)}
 
+/* Alinear los 4 porcentajes */
+.four{align-items:end}
+.four label{white-space:nowrap;font-size:12px;min-height:18px;display:flex;align-items:center}
+.four input{text-align:center;padding:12px 6px}
+
 /* Tooltip */
 #tip{position:fixed;z-index:10;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--ink)}
 #tip b{display:block;margin-bottom:2px}
@@ -62,6 +67,56 @@ button:active{transform:scale(.97)}
 .ring circle{fill:none;stroke-width:30;cursor:pointer;transition:stroke-width .25s ease,opacity .25s ease}
 .ring circle.on{stroke-width:38}
 .ring.hov circle:not(.on){opacity:.3}
+
+/* Fondo profesional */
+body{
+  background:
+    radial-gradient(900px 500px at 15% -10%,rgba(95,220,180,.10),transparent 60%),
+    radial-gradient(800px 500px at 100% 0%,rgba(127,176,230,.10),transparent 60%),
+    var(--bg);
+  background-attachment:fixed;
+  min-height:100vh;
+}
+
+/* Logo como marca de agua */
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:url("logo.png") center 45%/min(85vw,560px) no-repeat;
+  opacity:.07;
+  filter:invert(1) grayscale(1);
+  mix-blend-mode:screen;
+  pointer-events:none;
+  z-index:0;
+}
+main{position:relative;z-index:1}
+
+/* Tarjetas tipo vidrio */
+.box{
+  background:rgba(22,33,29,.72);
+  border:1px solid rgba(255,255,255,.06);
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+}
+input{background:rgba(14,21,19,.6)}
+.ring>div{background:rgba(14,21,19,.85)}
+
+/* Encabezado */
+.brand{padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand img{width:52px;height:52px;border:2px solid var(--line);box-shadow:0 0 0 4px rgba(95,220,180,.08)}
+.brand b{font-size:20px;letter-spacing:.08em;text-transform:uppercase}
+.brand small{font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+
+/* Botón */
+button{
+  background:linear-gradient(135deg,#5fdcb4,#7fb0e6);
+  box-shadow:0 8px 20px rgba(95,220,180,.25);
+}
+
+/* Pie de página */
+.pie{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--mute);padding:0 20px 28px}
 
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
