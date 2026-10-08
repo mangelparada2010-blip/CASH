@@ -1,16 +1,13 @@
 const cats=[{k:"Necesidades",p:45,c:"--n"},{k:"Ahorro",p:25,c:"--a"},{k:"Crecimiento",p:15,c:"--c"},{k:"Libre",p:15,c:"--l"}];
 const $=id=>document.getElementById(id);
-// Montos en pesos: el punto es separador de miles y la coma es decimal
 const num=s=>parseFloat(String(s).replace(/\./g,"").replace(",","."))||0;
-// Porcentajes: aceptan punto o coma como decimal
-const pct=s=>parseFloat(String(s).replace(",","."))||0;
 const fmt=n=>"$ "+Math.round(n).toLocaleString("es-CO");
 const reduce=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
- 
-$("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}">${c.k}</label><input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
- 
+
+$("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}"><i class="dot"></i>${c.k} %</label><input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
+
 $("cards").innerHTML=cats.map((c,i)=>`<div class="box"><div class="t"><i style="background:var(${c.c})"></i>${c.k}</div><b id="v${i}"></b><small id="x${i}"></small><div class="bar"><span><i id="b${i}" style="background:var(${c.c})"></i></span><small id="pc${i}" style="color:var(${c.c})"></small></div></div>`).join("");
- 
+
 // ---- Dona en SVG: un círculo por cada color ----
 const NS="http://www.w3.org/2000/svg", R=93, C=2*Math.PI*R;
 const svg=document.createElementNS(NS,"svg");
@@ -29,13 +26,14 @@ const segs=cats.map((c,i)=>{
 });
 $("ring").prepend(svg);
 const etiqueta=$("ring").querySelector("small");
- 
+
 let resumen="";
 let datos=[];
+let ultimo=null;
 let actual=cats.map(()=>0);
 let hover=-1;
 let raf=0;
- 
+
 function pintar(vals){
   const tot=vals.reduce((a,b)=>a+b,0);
   let acc=0;
@@ -55,7 +53,7 @@ function pintar(vals){
     $("total").textContent=fmt(tot);
   }
 }
- 
+
 function animar(destino){
   cancelAnimationFrame(raf);
   if(reduce()){actual=[...destino];pintar(actual);return;}
@@ -68,7 +66,7 @@ function animar(destino){
   };
   raf=requestAnimationFrame(paso);
 }
- 
+
 // ---- Resaltar un color (desde la dona o desde su tarjeta) ----
 function setHover(i){
   hover=i;
@@ -76,12 +74,12 @@ function setHover(i){
   $("ring").classList.toggle("hov",i>=0);
   pintar(actual);
 }
- 
+
 const tip=document.createElement("div");
 tip.id="tip";
 document.body.appendChild(tip);
 const ocultarTip=()=>{tip.style.opacity=0};
- 
+
 function mostrar(e,i){
   setHover(i);
   const s=datos[i];
@@ -90,43 +88,132 @@ function mostrar(e,i){
   tip.style.top=Math.max(e.clientY-56,8)+"px";
   tip.style.opacity=1;
 }
- 
+
 segs.forEach((s,i)=>{
   s.addEventListener("pointerenter",e=>mostrar(e,i));
   s.addEventListener("pointermove",e=>mostrar(e,i));
   s.addEventListener("pointerdown",e=>mostrar(e,i));
   s.addEventListener("pointerleave",()=>{ocultarTip();setHover(-1)});
 });
- 
+
 document.querySelectorAll("#cards .box").forEach((b,i)=>{
   b.addEventListener("pointerenter",()=>setHover(i));
   b.addEventListener("pointerleave",()=>setHover(-1));
 });
- 
+
 // ---- Cálculo ----
 function calc(){
   const monto=num($("monto").value);
   const extra=Math.min(num($("horas").value)*num($("vh").value),monto);
   const base=monto-extra;
-  const pcts=cats.map((c,i)=>pct($("p"+i).value));
+  const pcts=cats.map((c,i)=>num($("p"+i).value));
   const suma=pcts.reduce((a,b)=>a+b,0);
   const vals=pcts.map(p=>base*p/100); vals[1]+=extra;
   const tot=vals.reduce((a,b)=>a+b,0);
   datos=vals.map((v,i)=>({k:cats[i].k,v,c:cats[i].c,pct:tot?v/tot*100:0}));
- 
+  ultimo={monto,extra,pcts,vals,tot};
+
   cats.forEach((c,i)=>{$("pc"+i).textContent=pcts[i]+"%"});
   $("x1").textContent=extra>0?`incluye ${fmt(extra)} de horas extra`:"";
- 
+
   const ok=Math.abs(suma-100)<0.001, e=$("estado");
   e.className="state"+(ok?"":" bad");
   e.textContent=ok?"Tus porcentajes suman 100%.":`Tus porcentajes suman ${suma}%. Ajústalos para llegar a 100%.`;
   resumen=`Ingreso: ${fmt(monto)}\n`+cats.map((c,i)=>`${c.k}: ${fmt(vals[i])}`).join("\n");
- 
+
   animar(vals);
 }
- 
+
 document.querySelectorAll("input").forEach(i=>i.addEventListener("input",calc));
- 
+
 $("copiar").onclick=async()=>{const b=$("copiar");try{await navigator.clipboard.writeText(resumen);b.textContent="Resumen copiado"}catch(e){b.textContent="No se pudo copiar"}setTimeout(()=>b.textContent="Copiar resumen",1800)};
- 
+
+// ---- Extracto en PDF (impresión del navegador) ----
+function descargarPDF(){
+  if(!ultimo)calc();
+  const {monto,extra,pcts,vals,tot}=ultimo;
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const ahora=new Date();
+  const fecha=ahora.toLocaleDateString("es-CO",{day:"2-digit",month:"long",year:"numeric"});
+  const hora=ahora.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
+  const p2=n=>String(n).padStart(2,"0");
+  const nro=`${ahora.getFullYear()}${p2(ahora.getMonth()+1)}${p2(ahora.getDate())}-${p2(ahora.getHours())}${p2(ahora.getMinutes())}`;
+
+  const filas=cats.map((c,i)=>`
+    <tr>
+      <td><span class="pt" style="background:${css(c.c)}"></span>${c.k}</td>
+      <td class="r">${pcts[i]}%</td>
+      <td class="r">${(tot?vals[i]/tot*100:0).toFixed(1).replace(".",",")}%</td>
+      <td class="r"><b>${fmt(vals[i])}</b></td>
+    </tr>`).join("");
+
+  const extraHtml=extra>0?`
+    <div class="extra">
+      <b>Detalle de horas extra</b>
+      <p>${num($("horas").value)} h × ${fmt(num($("vh").value))} = ${fmt(extra)}</p>
+      <p>Este valor fue acreditado directamente a Ahorro.</p>
+    </div>`:"";
+
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+  <title>Extracto-Lignum-${nro}</title>
+  <style>
+    @page{size:A4;margin:0}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#141c19;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .head{background:#0e1513;color:#fff;padding:28px 18mm;display:flex;align-items:center;gap:16px}
+    .head img{width:60px;height:60px;border-radius:50%;background:#fff}
+    .head h1{margin:0;font-size:20px;letter-spacing:.06em}
+    .head p{margin:4px 0 0;color:#9db3aa;font-size:13px}
+    .body{padding:24px 18mm}
+    .meta{display:flex;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid #d2dad6}
+    .meta small{display:block;color:#78827e;font-size:10px;letter-spacing:.06em;margin-bottom:4px}
+    .meta b{font-size:14px}
+    .meta .big{font-size:20px}
+    table{width:100%;border-collapse:collapse;margin-top:26px}
+    th{background:#eef2f0;text-align:left;font-size:11px;letter-spacing:.05em;color:#3c4642;padding:11px 12px}
+    td{padding:13px 12px;border-bottom:1px solid #e4eae7;font-size:14px}
+    .r{text-align:right}
+    .pt{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:10px}
+    .tot{display:flex;justify-content:space-between;background:#0e1513;color:#fff;padding:14px 12px;font-weight:bold;font-size:14px}
+    .extra{margin-top:28px;font-size:13px;color:#3c4642}
+    .extra b{color:#141c19;font-size:14px}
+    .extra p{margin:6px 0 0}
+    .foot{position:fixed;left:18mm;right:18mm;bottom:12mm;border-top:1px solid #d2dad6;padding-top:8px;text-align:center;font-size:10px;color:#82908c}
+  </style></head><body>
+    <div class="head">
+      <img src="${new URL("logo.png",location.href).href}" alt="">
+      <div><h1>LIGNUM PRECISION TECH</h1><p>Extracto de distribución de ingresos</p></div>
+    </div>
+    <div class="body">
+      <div class="meta">
+        <div><small>EXTRACTO N°</small><b>${nro}</b></div>
+        <div><small>FECHA DE EMISIÓN</small><b>${fecha}, ${hora}</b></div>
+        <div style="text-align:right"><small>INGRESO RECIBIDO</small><b class="big">${fmt(monto)}</b></div>
+      </div>
+      <table>
+        <tr><th>CONCEPTO</th><th class="r">REGLA</th><th class="r">% REAL</th><th class="r">VALOR</th></tr>
+        ${filas}
+      </table>
+      <div class="tot"><span>TOTAL DISTRIBUIDO</span><span>${fmt(tot)}</span></div>
+      ${extraHtml}
+    </div>
+    <div class="foot">Documento informativo generado automáticamente. No tiene validez contable ni tributaria.<br>© Lignum Precision Tech</div>
+  </body></html>`;
+
+  // Se imprime dentro de un iframe oculto: no abre pestañas ni las bloquea
+  const f=document.createElement("iframe");
+  f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+  document.body.appendChild(f);
+  const d=f.contentWindow.document;
+  d.open();d.write(html);d.close();
+  const imprimir=()=>{
+    f.contentWindow.focus();
+    f.contentWindow.print();
+    setTimeout(()=>f.remove(),2000);
+  };
+  const img=d.querySelector("img");
+  if(img&&!img.complete){img.onload=imprimir;img.onerror=imprimir}else imprimir();
+}
+$("pdf").onclick=descargarPDF;
+
 calc();

@@ -26,11 +26,11 @@ h2{font-size:15px;margin:0 0 2px}.sub{margin:0 0 12px;font-size:13px;color:var(-
 .four{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .state{font-size:12px;margin-top:10px;color:var(--mute)}.state.bad{color:var(--bad)}
 button{height:54px;border:0;border-radius:27px;background:var(--a);color:var(--bg);font:700 16px "DM Sans",sans-serif;cursor:pointer}
-@media (max-width:420px){.four{grid-template-columns:1fr 1fr}}
+@media (max-width:480px){.four{grid-template-columns:1fr 1fr}}
 
 /* Porcentajes con el color de cada categoría */
-.four label{color:var(--col);font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
-.four input{border-color:var(--col);color:var(--col);font-weight:700;text-align:center;padding:12px 6px}
+.four label .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--col)}
+.four input{border-color:var(--col);color:var(--col);font-weight:700}
 .four input:focus-visible{outline-color:var(--col)}
 
 /* Alinear los 4 porcentajes */
@@ -109,11 +109,13 @@ input{background:rgba(14,21,19,.6)}
 .brand b{font-size:20px;letter-spacing:.08em;text-transform:uppercase}
 .brand small{font-size:12px;letter-spacing:.14em;text-transform:uppercase}
 
-/* Botón */
+/* Botones */
 button{
   background:linear-gradient(135deg,#5fdcb4,#7fb0e6);
   box-shadow:0 8px 20px rgba(95,220,180,.25);
 }
+button.sec{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+button.sec:hover{border-color:var(--a);filter:none}
 
 /* Pie de página */
 .pie{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--mute);padding:0 20px 28px}
