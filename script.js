@@ -4,7 +4,7 @@ const num=s=>parseFloat(String(s).replace(/\./g,"").replace(",","."))||0;
 const fmt=n=>"$ "+Math.round(n).toLocaleString("es-CO");
 const reduce=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-$("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}"><i class="dot"></i>${c.k} %</label><input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
+$("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}"><i class="dot"></i></label>${c.k} <input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
 
 $("cards").innerHTML=cats.map((c,i)=>`<div class="box"><div class="t"><i style="background:var(${c.c})"></i>${c.k}</div><b id="v${i}"></b><small id="x${i}"></small><div class="bar"><span><i id="b${i}" style="background:var(${c.c})"></i></span><small id="pc${i}" style="color:var(${c.c})"></small></div></div>`).join("");
 
