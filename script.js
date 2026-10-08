@@ -85,7 +85,7 @@ const ocultarTip=()=>{tip.style.opacity=0};
 function mostrar(e,i){
   setHover(i);
   const s=datos[i];
-  tip.innerHTML=`<b><i class="dot" style="background:var(${s.c})"></i>${s.k}</b>${fmt(s.v)} · ${s.pct.toFixed(1).replace(".",",")}%`;
+  tip.innerHTML=`<b><i class="dot" style="background:var(${s.c})"> </i>${s.k}</b>${fmt(s.v)} · ${s.pct.toFixed(1).replace(".",",")}%`;
   tip.style.left=Math.min(e.clientX+14,innerWidth-tip.offsetWidth-8)+"px";
   tip.style.top=Math.max(e.clientY-56,8)+"px";
   tip.style.opacity=1;
