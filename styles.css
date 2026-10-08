@@ -53,4 +53,5 @@ button:active{transform:scale(.97)}
 
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
+  .ring{cursor:pointer}
 }
