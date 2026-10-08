@@ -27,3 +27,9 @@ h2{font-size:15px;margin:0 0 2px}.sub{margin:0 0 12px;font-size:13px;color:var(-
 .state{font-size:12px;margin-top:10px;color:var(--mute)}.state.bad{color:var(--bad)}
 button{height:54px;border:0;border-radius:27px;background:var(--a);color:var(--bg);font:700 16px "DM Sans",sans-serif;cursor:pointer}
 @media (max-width:380px){.four{grid-template-columns:1fr 1fr}}
+.four label .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--col)}
+.four input{border-color:var(--col);color:var(--col);font-weight:700}
+.four input:focus-visible{outline-color:var(--col)}
+#tip{position:fixed;z-index:10;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--ink)}
+#tip b{display:block;margin-bottom:2px}
+#tip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
