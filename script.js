@@ -1,9 +1,51 @@
 const cats=[{k:"Necesidades",p:45,c:"--n"},{k:"Ahorro",p:25,c:"--a"},{k:"Crecimiento",p:15,c:"--c"},{k:"Libre",p:15,c:"--l"}];
 const $=id=>document.getElementById(id);
 const num=s=>parseFloat(String(s).replace(/\./g,"").replace(",","."))||0;
-const fmt=n=>"$ "+Math.round(n).toLocaleString("es-CO");
 const reduce=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+// ---- Monedas ----
+const decimales={COP:0,USD:2,EUR:2,MXN:2,PEN:2,CLP:0,BRL:2,GBP:2,ARS:2};
+const nombres={COP:"Peso colombiano (COP)",USD:"Dólar estadounidense (USD)",EUR:"Euro (EUR)",MXN:"Peso mexicano (MXN)",PEN:"Sol peruano (PEN)",CLP:"Peso chileno (CLP)",BRL:"Real brasileño (BRL)",GBP:"Libra esterlina (GBP)",ARS:"Peso argentino (ARS)"};
+// Tasas aproximadas de respaldo (por 1 USD). Se reemplazan por las de internet si hay conexión.
+let tasas={USD:1,COP:4000,EUR:0.92,MXN:18,PEN:3.7,CLP:950,BRL:5.5,GBP:0.78,ARS:1000};
+let enVivo=false;
+let moneda="COP";
+let fmtr;
+const mkFmt=()=>{fmtr=new Intl.NumberFormat("es-CO",{style:"currency",currency:moneda,minimumFractionDigits:decimales[moneda],maximumFractionDigits:decimales[moneda]})};
+const fmt=n=>fmtr.format(n);
+const campo=(n,m)=>new Intl.NumberFormat("es-CO",{maximumFractionDigits:decimales[m]}).format(n);
+mkFmt();
+
+$("moneda").innerHTML=Object.keys(decimales).map(m=>`<option value="${m}">${nombres[m]}</option>`).join("");
+
+function mostrarTasa(){
+  if(moneda==="COP"){$("tasa").textContent="Moneda base";return;}
+  const v=tasas.COP/tasas[moneda];
+  $("tasa").textContent=`1 ${moneda} = ${new Intl.NumberFormat("es-CO",{maximumFractionDigits:2}).format(v)} COP · ${enVivo?"tasa en vivo":"tasa aproximada (sin conexión)"}`;
+}
+
+function cambiarMoneda(nueva){
+  const k=tasas[nueva]/tasas[moneda];
+  ["monto","vh"].forEach(id=>{$(id).value=campo(num($(id).value)*k,nueva)});
+  moneda=nueva;
+  mkFmt();
+  mostrarTasa();
+  calc();
+}
+$("moneda").addEventListener("change",e=>cambiarMoneda(e.target.value));
+
+fetch("https://open.er-api.com/v6/latest/USD")
+  .then(r=>r.json())
+  .then(d=>{
+    if(d&&d.rates){
+      for(const m in decimales){if(d.rates[m])tasas[m]=d.rates[m]}
+      enVivo=true;
+      mostrarTasa();
+    }
+  })
+  .catch(()=>{});
+
+// ---- Interfaz ----
 $("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}"><i class="dot"></i>${c.k} %</label><input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
 
 $("cards").innerHTML=cats.map((c,i)=>`<div class="box"><div class="t"><i style="background:var(${c.c})"></i>${c.k}</div><b id="v${i}"></b><small id="x${i}"></small><div class="bar"><span><i id="b${i}" style="background:var(${c.c})"></i></span><small id="pc${i}" style="color:var(${c.c})"></small></div></div>`).join("");
@@ -119,7 +161,7 @@ function calc(){
   const ok=Math.abs(suma-100)<0.001, e=$("estado");
   e.className="state"+(ok?"":" bad");
   e.textContent=ok?"Tus porcentajes suman 100%.":`Tus porcentajes suman ${suma}%. Ajústalos para llegar a 100%.`;
-  resumen=`Ingreso: ${fmt(monto)}\n`+cats.map((c,i)=>`${c.k}: ${fmt(vals[i])}`).join("\n");
+  resumen=`Moneda: ${moneda}\nIngreso: ${fmt(monto)}\n`+cats.map((c,i)=>`${c.k}: ${fmt(vals[i])}`).join("\n");
 
   animar(vals);
 }
@@ -170,7 +212,7 @@ async function descargarPDF(){
     doc.text("LIGNUM PRECISION TECH",logo?M+30:M,19);
     doc.setFont("helvetica","normal");doc.setFontSize(10);
     doc.setTextColor(157,179,170);
-    doc.text("Extracto de distribución de ingresos",logo?M+30:M,26);
+    doc.text(`Extracto de distribución de ingresos · Moneda: ${moneda}`,logo?M+30:M,26);
 
     // Datos del extracto
     let y=54;
@@ -248,4 +290,5 @@ async function descargarPDF(){
 }
 $("pdf").onclick=descargarPDF;
 
+mostrarTasa();
 calc();
