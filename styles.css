@@ -1,0 +1,29 @@
+:root{--bg:#0e1513;--card:#16211d;--line:#26352f;--ink:#eaf2ee;--mute:#9db3aa;--n:#7fb0e6;--a:#5fdcb4;--c:#ecc067;--l:#c0a3f0;--bad:#ff8a7a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:460px;margin:0 auto;padding:24px 20px 40px;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{width:44px;height:44px;border-radius:50%;background:#fff}
+.brand b{display:block;letter-spacing:.04em}.brand small{color:var(--mute)}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
+input{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+input:focus-visible,button:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+#monto{font-size:28px;font-weight:700}
+.ring{align-self:center;width:216px;height:216px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background .3s}
+.ring div{width:156px;height:156px;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ring small{color:var(--mute);font-size:13px}.ring b{font-size:26px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.box{background:var(--card);border-radius:16px;padding:14px 16px}
+.box .t{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute)}
+.box .t i{width:10px;height:10px;border-radius:50%}
+.box b{display:block;font-size:20px;margin:4px 0}
+.box small{display:block;font-size:11px;color:var(--mute)}
+.bar{display:flex;align-items:center;gap:8px;margin-top:4px}
+.bar span{flex:1;height:4px;background:var(--line);border-radius:2px}
+.bar span i{display:block;height:4px;border-radius:2px;transition:width .3s}
+h2{font-size:15px;margin:0 0 2px}.sub{margin:0 0 12px;font-size:13px;color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.four{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.state{font-size:12px;margin-top:10px;color:var(--mute)}.state.bad{color:var(--bad)}
+button{height:54px;border:0;border-radius:27px;background:var(--a);color:var(--bg);font:700 16px "DM Sans",sans-serif;cursor:pointer}
+@media (max-width:380px){.four{grid-template-columns:1fr 1fr}}

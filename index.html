@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lignum Precision Tech · Distribución de ingresos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+  <div class="brand"><img src="logo.png" alt="Logo de Lignum Precision Tech"><div><b>Lignum</b><small>Precision Tech</small></div></div>
+
+  <div><label for="monto">¿Cuánto recibiste hoy?</label><input id="monto" inputmode="numeric" value="75.000" autocomplete="off"></div>
+
+  <div class="ring" id="ring"><div><small>Distribuido</small><b id="total"></b></div></div>
+  <div class="grid" id="cards"></div>
+
+  <div class="box">
+    <h2>Horas extra</h2><p class="sub">Cada hora extra va directo a tu ahorro.</p>
+    <div class="two">
+      <div><label for="horas">Horas extra</label><input id="horas" inputmode="decimal" value="0"></div>
+      <div><label for="vh">Valor por hora</label><input id="vh" inputmode="numeric" value="10.000"></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Tu regla automática</h2><p class="sub">Cada pago recibe el mismo tratamiento.</p>
+    <div class="four" id="cfg"></div>
+    <div class="state" id="estado"></div>
+  </div>
+
+  <button id="copiar">Copiar resumen</button>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
