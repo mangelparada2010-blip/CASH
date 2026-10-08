@@ -4,7 +4,7 @@ const num=s=>parseFloat(String(s).replace(/\./g,"").replace(",","."))||0;
 const fmt=n=>"$ "+Math.round(n).toLocaleString("es-CO");
 const reduce=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-$("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}"><i class="dot"></i></label>${c.k} <input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
+$("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p${i}"><i class="dot"></i>${c.k} %</label><input id="p${i}" inputmode="decimal" value="${c.p}"></div>`).join("");
 
 $("cards").innerHTML=cats.map((c,i)=>`<div class="box"><div class="t"><i style="background:var(${c.c})"></i>${c.k}</div><b id="v${i}"></b><small id="x${i}"></small><div class="bar"><span><i id="b${i}" style="background:var(${c.c})"></i></span><small id="pc${i}" style="color:var(${c.c})"></small></div></div>`).join("");
 
@@ -28,7 +28,8 @@ $("ring").prepend(svg);
 const etiqueta=$("ring").querySelector("small");
 
 let resumen="";
-let datos=[]; let ultimo=null;
+let datos=[];
+let ultimo=null;
 let actual=cats.map(()=>0);
 let hover=-1;
 let raf=0;
@@ -110,7 +111,7 @@ function calc(){
   const vals=pcts.map(p=>base*p/100); vals[1]+=extra;
   const tot=vals.reduce((a,b)=>a+b,0);
   datos=vals.map((v,i)=>({k:cats[i].k,v,c:cats[i].c,pct:tot?v/tot*100:0}));
-    ultimo={monto,extra,pcts,vals,tot};
+  ultimo={monto,extra,pcts,vals,tot};
 
   cats.forEach((c,i)=>{$("pc"+i).textContent=pcts[i]+"%"});
   $("x1").textContent=extra>0?`incluye ${fmt(extra)} de horas extra`:"";
@@ -127,6 +128,7 @@ document.querySelectorAll("input").forEach(i=>i.addEventListener("input",calc));
 
 $("copiar").onclick=async()=>{const b=$("copiar");try{await navigator.clipboard.writeText(resumen);b.textContent="Resumen copiado"}catch(e){b.textContent="No se pudo copiar"}setTimeout(()=>b.textContent="Copiar resumen",1800)};
 
+// ---- Extracto en PDF ----
 async function cargarLogo(){
   try{
     const img=new Image();
@@ -140,7 +142,8 @@ async function cargarLogo(){
 }
 
 async function descargarPDF(){
-  if(!ultimo||!window.jspdf)return;
+  if(!ultimo)calc();
+  if(!window.jspdf){alert("No se pudo cargar la librería de PDF. Verifica que el archivo jspdf.umd.min.js esté en el repositorio.");return;}
   const btn=$("pdf"), txt=btn.textContent;
   btn.textContent="Generando...";
   try{
@@ -237,6 +240,8 @@ async function descargarPDF(){
     doc.text("© Lignum Precision Tech",W/2,288,{align:"center"});
 
     doc.save(`Extracto-Lignum-${nro}.pdf`);
+  }catch(err){
+    alert("Error al generar el PDF: "+err.message);
   }finally{
     btn.textContent=txt;
   }
