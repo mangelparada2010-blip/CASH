@@ -1,9 +1,6 @@
 const cats=[{k:"Necesidades",p:45,c:"--n"},{k:"Ahorro",p:25,c:"--a"},{k:"Crecimiento",p:15,c:"--c"},{k:"Libre",p:15,c:"--l"}];
 const $=id=>document.getElementById(id);
-// Montos: el punto es separador de miles y la coma es el decimal (formato es-CO)
 const num=s=>parseFloat(String(s).replace(/\./g,"").replace(",","."))||0;
-// Horas y porcentajes: aceptan punto o coma como decimal
-const numD=s=>parseFloat(String(s).replace(",","."))||0;
 const reduce=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---- Monedas (todas las del mundo) ----
@@ -18,27 +15,84 @@ const nombre=m=>{let n=m;try{if(dn)n=dn.of(m)||m}catch(e){}n=n.charAt(0).toUpper
 let tasas={USD:1,COP:4000,EUR:0.92,MXN:18,PEN:3.7,CLP:950,BRL:5.5,GBP:0.78,ARS:1000};
 let enVivo=false;
 let moneda="COP";
-let fmtr,fmtrPdf;
-const mkFmt=()=>{
-  const d=dec(moneda);
-  fmtr=new Intl.NumberFormat("es-CO",{style:"currency",currency:moneda,minimumFractionDigits:d,maximumFractionDigits:d});
-  // Para el PDF se usa el código (COP, USD...) porque la fuente del PDF no tiene todos los símbolos
-  fmtrPdf=new Intl.NumberFormat("es-CO",{style:"currency",currency:moneda,currencyDisplay:"code",minimumFractionDigits:d,maximumFractionDigits:d});
-};
+let fmtr;
+const mkFmt=()=>{const d=dec(moneda);fmtr=new Intl.NumberFormat("es-CO",{style:"currency",currency:moneda,minimumFractionDigits:d,maximumFractionDigits:d})};
 const fmt=n=>fmtr.format(n);
-const fmtPdf=n=>fmtrPdf.format(n).replace(/\u00a0/g," ");
 const campo=(n,m)=>new Intl.NumberFormat("es-CO",{maximumFractionDigits:dec(m)}).format(n);
-const pctTxt=n=>new Intl.NumberFormat("es-CO",{maximumFractionDigits:2}).format(n);
 mkFmt();
+
+// ---- Selector de moneda personalizado ----
+const norm=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const nombreSolo=m=>{let n=m;try{if(dn)n=dn.of(m)||m}catch(e){}return n.charAt(0).toUpperCase()+n.slice(1)};
+const btnM=$("monedaBtn"),panel=$("monedaPanel"),buscar=$("monedaBuscar"),lista=$("monedaLista");
+let grupos=[],idx=-1;
+
+function actualizarBtn(){
+  $("monedaTxt").innerHTML=`<b>${moneda}</b>${nombreSolo(moneda)}`;
+}
+
+function dibujarLista(f=""){
+  const q=norm(f.trim());
+  let html="";
+  grupos.forEach(g=>{
+    const items=g.items.filter(m=>!q||norm(nombreSolo(m)).includes(q)||norm(m).includes(q));
+    if(!items.length)return;
+    html+=`<li class="grp" role="presentation">${g.t}</li>`+items.map(m=>
+      `<li class="opt" role="option" data-m="${m}" aria-selected="${m===moneda}"><span>${nombreSolo(m)}</span><em>${m}</em></li>`
+    ).join("");
+  });
+  lista.innerHTML=html||`<li class="vacio">No encontramos esa moneda</li>`;
+  idx=-1;
+}
 
 function poblarSelect(){
   const codigos=Object.keys(tasas).filter(m=>!EXCLUIR.includes(m)&&(!soportadas||soportadas.has(m)));
   const pop=POPULARES.filter(m=>codigos.includes(m));
   const resto=codigos.filter(m=>!pop.includes(m)).sort((a,b)=>nombre(a).localeCompare(nombre(b),"es"));
-  const op=m=>`<option value="${m}">${nombre(m)}</option>`;
-  $("moneda").innerHTML=`<optgroup label="Más usadas">${pop.map(op).join("")}</optgroup>`+(resto.length?`<optgroup label="Todas las monedas">${resto.map(op).join("")}</optgroup>`:"");
-  $("moneda").value=moneda;
+  grupos=[{t:"Más usadas",items:pop},{t:"Todas las monedas",items:resto}];
+  dibujarLista(buscar.value);
+  actualizarBtn();
 }
+
+const opciones=()=>[...lista.querySelectorAll(".opt")];
+function marcar(i){
+  const o=opciones(); if(!o.length)return;
+  idx=(i+o.length)%o.length;
+  o.forEach((x,k)=>x.classList.toggle("act",k===idx));
+  o[idx].scrollIntoView({block:"nearest"});
+}
+
+function abrir(){
+  panel.hidden=false;
+  btnM.setAttribute("aria-expanded","true");
+  buscar.value="";
+  dibujarLista("");
+  const sel=lista.querySelector('[aria-selected="true"]');
+  if(sel)lista.scrollTop=sel.offsetTop-lista.clientHeight/2;
+  if(!matchMedia("(pointer:coarse)").matches)buscar.focus(); // en celular no abrir teclado solo
+}
+function cerrar(foco){
+  panel.hidden=true;
+  btnM.setAttribute("aria-expanded","false");
+  if(foco)btnM.focus();
+}
+function elegir(m){
+  cerrar(true);
+  if(m&&m!==moneda)cambiarMoneda(m);
+}
+
+btnM.addEventListener("click",()=>panel.hidden?abrir():cerrar());
+btnM.addEventListener("keydown",e=>{if(e.key==="ArrowDown"&&panel.hidden){e.preventDefault();abrir()}});
+buscar.addEventListener("input",()=>{dibujarLista(buscar.value);marcar(0)});
+lista.addEventListener("click",e=>{const o=e.target.closest(".opt");if(o)elegir(o.dataset.m)});
+$("combo").addEventListener("keydown",e=>{
+  if(e.key==="Escape"){cerrar(true)}
+  else if(e.key==="ArrowDown"&&e.target===buscar){e.preventDefault();marcar(idx+1)}
+  else if(e.key==="ArrowUp"&&e.target===buscar){e.preventDefault();marcar(idx-1)}
+  else if(e.key==="Enter"&&e.target===buscar){e.preventDefault();const o=opciones()[idx];if(o)elegir(o.dataset.m)}
+});
+document.addEventListener("pointerdown",e=>{if(!panel.hidden&&!$("combo").contains(e.target))cerrar()});
+
 poblarSelect();
 
 function mostrarTasa(){
@@ -49,93 +103,13 @@ function mostrarTasa(){
 
 function cambiarMoneda(nueva){
   const k=tasas[nueva]/tasas[moneda];
-  ["monto","vh"].forEach(id=>{
-    const el=$(id);
-    // Si el campo está vacío se deja vacío (así se ve el placeholder)
-    if(el.value.trim()==="")return;
-    el.value=campo(num(el.value)*k,nueva);
-  });
+  ["monto","vh"].forEach(id=>{$(id).value=campo(num($(id).value)*k,nueva)});
   moneda=nueva;
-  pintarBtn();
   mkFmt();
+  actualizarBtn();
   mostrarTasa();
   calc();
 }
-$("moneda").addEventListener("change",e=>cambiarMoneda(e.target.value));
-
-// ---- Selector de moneda propio (usa el <select> oculto como fuente de datos) ----
-const cm=$("cm"), cmBtn=$("cmBtn"), cmPanel=$("cmPanel"), cmSearch=$("cmSearch"), cmList=$("cmList");
-const soloNombre=m=>nombre(m).replace(/ \([A-Z]{3}\)$/,"");
-const norm=s=>String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-let act=-1;
-const opts=()=>[...cmList.querySelectorAll(".cm-opt")];
-
-function pintarBtn(){
-  $("cmCode").textContent=moneda;
-  $("cmName").textContent=soloNombre(moneda);
-}
-
-function construirMenu(filtro=""){
-  const q=norm(filtro.trim());
-  let html="";
-  $("moneda").querySelectorAll("optgroup").forEach(g=>{
-    const items=[...g.querySelectorAll("option")].map(o=>o.value)
-      .filter(m=>!q||norm(m).includes(q)||norm(soloNombre(m)).includes(q));
-    if(!items.length)return;
-    html+=`<li class="cm-grp" role="presentation">${g.label}</li>`
-      +items.map(m=>`<li role="option" class="cm-opt${m===moneda?" sel":""}" data-v="${m}" aria-selected="${m===moneda}"><span class="cm-code">${m}</span><span class="cm-name">${soloNombre(m)}</span></li>`).join("");
-  });
-  cmList.innerHTML=html||`<li class="cm-vacio" role="presentation">Sin resultados</li>`;
-  act=-1;
-}
-
-function marcar(i){
-  const o=opts();
-  if(!o.length)return;
-  act=(i+o.length)%o.length;
-  o.forEach((x,k)=>x.classList.toggle("act",k===act));
-  o[act].scrollIntoView({block:"nearest"});
-}
-
-function abrir(){
-  cmSearch.value="";
-  construirMenu();
-  cmPanel.hidden=false;
-  cm.classList.add("open");
-  cmBtn.setAttribute("aria-expanded","true");
-  const s=cmList.querySelector(".sel");
-  if(s)s.scrollIntoView({block:"center"});
-  cmSearch.focus({preventScroll:true});
-}
-
-function cerrar(volverFoco){
-  cmPanel.hidden=true;
-  cm.classList.remove("open");
-  cmBtn.setAttribute("aria-expanded","false");
-  if(volverFoco)cmBtn.focus();
-}
-
-function elegir(m){
-  cerrar(true);
-  if(m&&m!==moneda){$("moneda").value=m;cambiarMoneda(m)}
-}
-
-cmBtn.addEventListener("click",()=>cmPanel.hidden?abrir():cerrar(true));
-cmBtn.addEventListener("keydown",e=>{if(e.key==="ArrowDown"&&cmPanel.hidden){e.preventDefault();abrir()}});
-cmList.addEventListener("click",e=>{const li=e.target.closest(".cm-opt");if(li)elegir(li.dataset.v)});
-cmSearch.addEventListener("input",()=>construirMenu(cmSearch.value));
-cmSearch.addEventListener("keydown",e=>{
-  if(e.key==="ArrowDown"){e.preventDefault();marcar(act+1)}
-  else if(e.key==="ArrowUp"){e.preventDefault();marcar(act<0?-1:act-1)}
-  else if(e.key==="Enter"){
-    e.preventDefault();
-    const o=opts();
-    if(o.length)elegir(o[act>=0?act:0].dataset.v);
-  }
-});
-cm.addEventListener("keydown",e=>{if(e.key==="Escape"&&!cmPanel.hidden){e.preventDefault();cerrar(true)}});
-document.addEventListener("pointerdown",e=>{if(!cmPanel.hidden&&!cm.contains(e.target))cerrar(false)});
-pintarBtn();
 
 fetch("https://open.er-api.com/v6/latest/USD")
   .then(r=>r.json())
@@ -155,27 +129,10 @@ $("cfg").innerHTML=cats.map((c,i)=>`<div style="--col:var(${c.c})"><label for="p
 
 $("cards").innerHTML=cats.map((c,i)=>`<div class="box"><div class="t"><i style="background:var(${c.c})"></i>${c.k}</div><b id="v${i}"></b><small id="x${i}"></small><div class="bar"><span><i id="b${i}" style="background:var(${c.c})"></i></span><small id="pc${i}" style="color:var(${c.c})"></small></div></div>`).join("");
 
-// ---- Formato de miles mientras se escribe (monto y valor por hora) ----
-function vivo(el){
-  const pos=el.selectionStart??el.value.length;
-  const dig=el.value.slice(0,pos).replace(/[^\d,]/g,"").length;
-  const limpio=el.value.replace(/[^\d,]/g,"");
-  const partes=limpio.split(",");
-  let ent=partes.shift().replace(/^0+(?=\d)/,"");
-  let out=ent.replace(/\B(?=(\d{3})+(?!\d))/g,".");
-  const d=dec(moneda);
-  if(partes.length&&d>0)out+=","+partes.join("").slice(0,d);
-  el.value=out;
-  let c=0,n=0;
-  while(c<out.length&&n<dig){if(/[\d,]/.test(out[c]))n++;c++}
-  try{el.setSelectionRange(c,c)}catch(e){}
-}
-
 // ---- Dona en SVG: un círculo por cada color ----
 const NS="http://www.w3.org/2000/svg", R=93, C=2*Math.PI*R;
 const svg=document.createElementNS(NS,"svg");
 svg.setAttribute("viewBox","0 0 216 216");
-svg.setAttribute("aria-hidden","true");
 const pista=document.createElementNS(NS,"circle");
 pista.setAttribute("cx",108);pista.setAttribute("cy",108);pista.setAttribute("r",R);
 pista.style.stroke="var(--line)";
@@ -197,7 +154,6 @@ let ultimo=null;
 let actual=cats.map(()=>0);
 let hover=-1;
 let raf=0;
-let srT=0;
 
 function pintar(vals){
   const tot=vals.reduce((a,b)=>a+b,0);
@@ -269,39 +225,28 @@ document.querySelectorAll("#cards .box").forEach((b,i)=>{
 // ---- Cálculo ----
 function calc(){
   const monto=num($("monto").value);
-  const horas=numD($("horas").value), vh=num($("vh").value);
-  const extra=Math.min(horas*vh,monto);
+  const extra=Math.min(num($("horas").value)*num($("vh").value),monto);
   const base=monto-extra;
-  const pcts=cats.map((c,i)=>numD($("p"+i).value));
+  const pcts=cats.map((c,i)=>num($("p"+i).value));
   const suma=pcts.reduce((a,b)=>a+b,0);
   const vals=pcts.map(p=>base*p/100); vals[1]+=extra;
   const tot=vals.reduce((a,b)=>a+b,0);
   datos=vals.map((v,i)=>({k:cats[i].k,v,c:cats[i].c,pct:tot?v/tot*100:0}));
-  ultimo={monto,extra,horas,vh,pcts,vals,tot};
+  ultimo={monto,extra,pcts,vals,tot};
 
-  cats.forEach((c,i)=>{$("pc"+i).textContent=pctTxt(pcts[i])+"%"});
+  cats.forEach((c,i)=>{$("pc"+i).textContent=pcts[i]+"%"});
   $("x1").textContent=extra>0?`incluye ${fmt(extra)} de horas extra`:"";
 
   const ok=Math.abs(suma-100)<0.001, e=$("estado");
   e.className="state"+(ok?"":" bad");
-  e.textContent=ok?"Tus porcentajes suman 100%.":`Tus porcentajes suman ${pctTxt(suma)}%. Ajústalos para llegar a 100%.`;
-
-  resumen=`Moneda: ${moneda}\nIngreso: ${fmt(monto)}\n`
-    +(extra>0?`Horas extra: ${pctTxt(horas)} h x ${fmt(vh)} = ${fmt(extra)} (a Ahorro)\n`:"")
-    +cats.map((c,i)=>`${c.k}: ${fmt(vals[i])}`).join("\n")
-    +`\nTotal distribuido: ${fmt(tot)}`;
-
-  // Aviso accesible (sin spamear mientras corre la animación)
-  clearTimeout(srT);
-  srT=setTimeout(()=>{$("sr").textContent=`Total distribuido ${fmt(tot)}`},500);
+  e.textContent=ok?"Tus porcentajes suman 100%.":`Tus porcentajes suman ${suma}%. Ajústalos para llegar a 100%.`;
+  resumen=`Moneda: ${moneda}\nIngreso: ${fmt(monto)}\n`+cats.map((c,i)=>`${c.k}: ${fmt(vals[i])}`).join("\n");
 
   animar(vals);
 }
 
-document.querySelectorAll("input:not(#cmSearch)").forEach(i=>i.addEventListener("input",()=>{
-  if(i.id==="monto"||i.id==="vh")vivo(i);
-  calc();
-}));
+// El buscador de monedas no debe recalcular la dona en cada letra
+document.querySelectorAll("input:not(#monedaBuscar)").forEach(i=>i.addEventListener("input",calc));
 
 $("copiar").onclick=async()=>{const b=$("copiar");try{await navigator.clipboard.writeText(resumen);b.textContent="Resumen copiado"}catch(e){b.textContent="No se pudo copiar"}setTimeout(()=>b.textContent="Copiar resumen",1800)};
 
@@ -329,7 +274,7 @@ async function descargarPDF(){
     const W=210, M=18, RR=W-M;
     const rgb=h=>{h=h.replace("#","");return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16))};
     const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-    const {monto,extra,horas,vh,pcts,vals,tot}=ultimo;
+    const {monto,extra,pcts,vals,tot}=ultimo;
 
     const ahora=new Date();
     const fecha=ahora.toLocaleDateString("es-CO",{day:"2-digit",month:"long",year:"numeric"});
@@ -359,7 +304,7 @@ async function descargarPDF(){
     doc.text(nro,M,y+6);
     doc.text(`${fecha}, ${hora}`,90,y+6);
     doc.setFontSize(14);
-    doc.text(fmtPdf(monto),RR,y+7,{align:"right"});
+    doc.text(fmt(monto),RR,y+7,{align:"right"});
 
     doc.setDrawColor(210,218,214);doc.setLineWidth(.3);
     doc.line(M,y+13,RR,y+13);
@@ -381,10 +326,10 @@ async function descargarPDF(){
       doc.circle(M+5,y-1.2,1.8,"F");
       doc.setFont("helvetica","normal");doc.setFontSize(11);doc.setTextColor(20,28,25);
       doc.text(c.k,M+10,y);
-      doc.text(`${pctTxt(pcts[i])}%`,115,y,{align:"right"});
+      doc.text(`${pcts[i]}%`,115,y,{align:"right"});
       doc.text(`${(tot?vals[i]/tot*100:0).toFixed(1).replace(".",",")}%`,143,y,{align:"right"});
       doc.setFont("helvetica","bold");
-      doc.text(fmtPdf(vals[i]),RR-4,y,{align:"right"});
+      doc.text(fmt(vals[i]),RR-4,y,{align:"right"});
       doc.setDrawColor(228,234,231);
       doc.line(M,y+4.5,RR,y+4.5);
       y+=11;
@@ -395,15 +340,16 @@ async function descargarPDF(){
     doc.rect(M,y-4,RR-M,12,"F");
     doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(11);
     doc.text("TOTAL DISTRIBUIDO",M+4,y+3.5);
-    doc.text(fmtPdf(tot),RR-4,y+3.5,{align:"right"});
+    doc.text(fmt(tot),RR-4,y+3.5,{align:"right"});
     y+=24;
 
     // Horas extra
     if(extra>0){
+      const horas=num($("horas").value), vh=num($("vh").value);
       doc.setTextColor(20,28,25);doc.setFont("helvetica","bold");doc.setFontSize(11);
       doc.text("Detalle de horas extra",M,y);
       doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(60,70,66);
-      doc.text(`${pctTxt(horas)} h x ${fmtPdf(vh)} = ${fmtPdf(extra)}`,M,y+7);
+      doc.text(`${horas} h x ${fmt(vh)} = ${fmt(extra)}`,M,y+7);
       doc.text("Este valor fue acreditado directamente a Ahorro.",M,y+13);
       y+=26;
     }
